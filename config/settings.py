@@ -76,7 +76,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-     'default': env.db('MYSQL_DATABASE')
+     'default': env.db('SQLITE_DATABASE')
 }
 
 
