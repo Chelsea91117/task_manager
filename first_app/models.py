@@ -4,8 +4,14 @@ from django.db import models
 class Category(models.Model):
     name = models.CharField(max_length=150, verbose_name='Название категории')
 
+    class Meta:
+        db_table = 'task_manager_category'
+        verbose_name = 'Category'
+        verbose_name_plural = 'Categories'
+        unique_together = ('name',)
+
     def __str__(self):
-        return f'Название категории: {self.name}'
+        return self.name
 
 
 class Task(models.Model):
@@ -23,8 +29,14 @@ class Task(models.Model):
     deadline = models.DateTimeField(verbose_name='Дата и время дедлайна')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата и время создания')
 
+    class Meta:
+        db_table = 'task_manager_task'
+        ordering = ['-created_at']
+        verbose_name = 'Task'
+        unique_together = ('title',)
+
     def __str__(self):
-        return f'Название задачи: {self.title}, Дата и время дедлайна: {self.deadline}'
+        return self.title
 
 
 class SubTask(models.Model):
@@ -42,5 +54,10 @@ class SubTask(models.Model):
     deadline = models.DateTimeField(verbose_name='Дата и время дедлайна')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата и время создания')
 
+    class Meta:
+        db_table = 'task_manager_subtask'
+        ordering = ['-created_at']
+        verbose_name = 'SubTask'
+        unique_together = ('title',)
     def __str__(self):
-        return f'Название подзадачи: {self.title}, Дата и время дедлайна: {self.deadline}'
+        return self.title
