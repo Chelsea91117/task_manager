@@ -1,0 +1,73 @@
+1. Создание записей:
+
+from first_app.models import *
+from django.utils import timezone
+from datetime import timedelta
+
+new_task = Task.objects.create(
+    title = "Prepare presentation",
+    description = "Prepare materials and slides for the presentation",
+    status = "New",
+    deadline = timezone.now() + timedelta(days=3)
+)
+
+
+
+subtask1 = SubTask(
+    title = 'Gather Information',
+    description = "Find necessary information for the presentation",
+    task_id = 3,
+    status = "New",
+    deadline = timezone.now() + timedelta(days=2)
+)
+
+subtask2 = SubTask(
+    title = "Create slides",
+    description = "Create presentation slides",
+    task_id = 3,
+    status = "New",
+    deadline = timezone.now() + timedelta(days=1)
+)
+
+SubTask.objects.bulk_create([subtask1, subtask2])
+
+----------------------------------------------------------
+
+2. Чтение записей:
+
+Tasks со статусом "New":
+Вывести все задачи, у которых статус "New".
+
+>>> Task.objects.filter(status = "New")
+<QuerySet [<Task: Prepare presentation>, <Task: Docker>, <Task: Бег>]>
+
+SubTasks с просроченным статусом "Done":
+Вывести все подзадачи, у которых статус "Done", но срок выполнения истек.
+
+>>> from django.db.models import Q
+>>> SubTask.objects.filter(Q(status__iexact = "Done") & Q(deadline__lt = timezone.now()))
+<QuerySet []>
+
+------------------------------------------------------
+
+3. Изменение записей:
+
+Измените статус "Prepare presentation" на "In progress".
+Измените срок выполнения для "Gather information" на два дня назад.
+Измените описание для "Create slides" на "Create and format presentation slides".
+
+>>> Task.objects.filter(title="Prepare presentation").update(status="In progress")
+1
+>>> SubTask.objects.filter(title="Gather Information").update(deadline = timezone.now() - timedelta(days=2))
+1
+>>> SubTask.objects.filter(title="Create slides").update(description = "Create and format presentation slides")
+1
+
+--------------------------------------------------------------------------
+
+4. Удаление записей:
+Удалите задачу "Prepare presentation" и все ее подзадачи.
+
+>>> task = Task.objects.get(id=3)
+>>> task.delete()
+(3, {'first_app.SubTask': 2, 'first_app.Task': 1})
