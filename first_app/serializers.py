@@ -3,17 +3,12 @@ from django.utils import timezone
 from .models import *
 
 
-class TaskSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Task
-        fields = ['title', 'description', 'status', 'deadline']
+class SubTaskSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(read_only=True, required=False)
 
-
-class SubTaskCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubTask
         fields = '__all__'
-        read_only_fields = ['created_at']
 
 
 class CategoryCreateSerializer(serializers.ModelSerializer):
@@ -34,18 +29,25 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class TaskDetailSerializer(serializers.ModelSerializer):
-    subtask = SubTaskCreateSerializer()
+class TaskListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
-        read_only_fields = ['created_at']
+
+
+class TaskDetailSerializer(serializers.ModelSerializer):
+    sub_tasks = SubTaskSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Task
+        fields = '__all__'
 
 
 class TaskCreateSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Task
-        read_only_fields = ['created_at']
+        fields = '__all__'
 
     def validate_deadline(self, value: str) -> int:
         value = timezone.make_aware(value.replace(tzinfo=None), timezone.get_current_timezone())
