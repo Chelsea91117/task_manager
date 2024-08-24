@@ -1,8 +1,10 @@
 from django.db.models import Count
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.pagination import CursorPagination, PageNumberPagination
+# from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
+
 from .serializers import *
 from django.utils import timezone
 from rest_framework import filters
@@ -24,15 +26,15 @@ def tasks_statistics(request):
     return Response(response_data)
 
 
-class TaskPagination(PageNumberPagination):
-    page_size = 3
-    page_size_query_param = 'page_size'
-    max_page_size = 10
+# class TaskPagination(PageNumberPagination):
+#     page_size = 3
+#     page_size_query_param = 'page_size'
+#     max_page_size = 10
 
 
 class TaskListCreateView(ListCreateAPIView):
     queryset = Task.objects.all()
-    pagination_class = TaskPagination
+    # pagination_class = TaskPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'deadline']
     search_fields = ['title', 'description']
@@ -47,19 +49,19 @@ class TaskListCreateView(ListCreateAPIView):
 class TaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskDetailSerializer
-    pagination_class = TaskPagination
+    # pagination_class = TaskPagination
 
 
-class SubTaskPagination(PageNumberPagination):
-    page_size = 3
-    page_size_query_param = 'page_size'
-    max_page_size = 10
+# class SubTaskPagination(PageNumberPagination):
+#     page_size = 3
+#     page_size_query_param = 'page_size'
+#     max_page_size = 10
 
 
 class SubTaskListCreateView(ListCreateAPIView):
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
-    pagination_class = SubTaskPagination
+    # pagination_class = SubTaskPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'deadline']
     search_fields = ['title', 'description']
@@ -69,4 +71,28 @@ class SubTaskListCreateView(ListCreateAPIView):
 class SubTaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
-    pagination_class = SubTaskPagination
+    # pagination_class = SubTaskPagination
+
+
+class CategoryViewSet(ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+    @action(detail=False, methods=['get'])
+    def count_tasks(self, request):
+
+            category_with_tasks_count = Category.objects.annotate(task_count=Count('tasks'))
+
+            data = [
+                {
+                    "id": category.id,
+                    "category": category.name,
+                    "task_count": category.task_count
+                }
+                for category in category_with_tasks_count
+            ]
+
+            return Response(data)
+
+
+
