@@ -1,14 +1,64 @@
+from datetime import datetime
+from django.contrib.auth import authenticate
 from django.db.models import Count
 from rest_framework.decorators import api_view, action
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-# from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-
+from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import *
 from django.utils import timezone
-from rest_framework import filters
+from rest_framework import filters, status
 from django_filters.rest_framework import DjangoFilterBackend
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        user = authenticate(request, username=username, password=password)
+
+        if user:
+            refresh = RefreshToken.for_user(user)
+            access_token = refresh.access_token
+
+            # Используем exp для установки времени истечения куки
+            access_expiry = datetime.utcfromtimestamp(access_token['exp'])
+            refresh_expiry = datetime.utcfromtimestamp(refresh['exp'])
+
+            response = Response(status=status.HTTP_200_OK)
+            response.set_cookie(
+                key='access_token',
+                value=str(access_token),
+                httponly=True,
+                secure=False, # Используйте True для HTTPS
+                samesite='Lax',
+                expires=access_expiry
+            )
+            response.set_cookie(
+                key='refresh_token',
+                value=str(refresh),
+                httponly=True,
+                secure=False,
+                samesite='Lax',
+                expires=refresh_expiry
+            )
+            return response
+        else:
+            return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class LogoutView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response.delete_cookie('access_token')
+        response.delete_cookie('refresh_token')
+        return response
 
 
 @api_view(['GET'])
@@ -26,19 +76,13 @@ def tasks_statistics(request):
     return Response(response_data)
 
 
-# class TaskPagination(PageNumberPagination):
-#     page_size = 3
-#     page_size_query_param = 'page_size'
-#     max_page_size = 10
-
-
 class TaskListCreateView(ListCreateAPIView):
     queryset = Task.objects.all()
-    # pagination_class = TaskPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status', 'deadline']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at']
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -49,13 +93,7 @@ class TaskListCreateView(ListCreateAPIView):
 class TaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskDetailSerializer
-    # pagination_class = TaskPagination
-
-
-# class SubTaskPagination(PageNumberPagination):
-#     page_size = 3
-#     page_size_query_param = 'page_size'
-#     max_page_size = 10
+    permission_classes = [IsAuthenticated]
 
 
 class SubTaskListCreateView(ListCreateAPIView):
@@ -66,17 +104,19 @@ class SubTaskListCreateView(ListCreateAPIView):
     filterset_fields = ['status', 'deadline']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at']
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
 
 class SubTaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
-    # pagination_class = SubTaskPagination
+    permission_classes = [IsAuthenticated]
 
 
 class CategoryViewSet(ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
 
     @action(detail=False, methods=['get'])
     def count_tasks(self, request):
