@@ -9,6 +9,7 @@ class SubTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubTask
         fields = '__all__'
+        read_only_fields = ['owner']
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -48,11 +49,11 @@ class TaskCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
+        read_only_fields = ['owner']
 
     def validate_deadline(self, value: str) -> int:
         value = timezone.make_aware(value.replace(tzinfo=None), timezone.get_current_timezone())
         if value < timezone.now():
             raise serializers.ValidationError("Дедлайн не может быть в прошлом")
         return value
-
 
