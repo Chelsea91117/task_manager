@@ -1,7 +1,6 @@
 import json
 from typing import List
-
-from task import Task
+from task_model import Task
 
 class Storage:
     def __init__(self, file_path: str):
@@ -17,6 +16,9 @@ class Storage:
             return []
         except json.decoder.JSONDecodeError:
             raise ValueError("Ошибка при чтении файла хранения данных.")
+        except Exception as e:
+            raise ValueError(f"Неизвестная ошибка: {e}")
+
 
     def save_data(self, tasks: List[Task]) -> None:
         """Сохранение данных в файл."""
